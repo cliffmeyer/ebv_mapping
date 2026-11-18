@@ -1,0 +1,9 @@
+name: ebv-atac-minimal
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.9
+  - snakemake-minimal
+  - bwa>=0.7.17
+  - samtools>=1.17

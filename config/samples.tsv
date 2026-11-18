@@ -1,0 +1,5 @@
+sample	unit	r1	r2	control_type
+example_test	L001	/path/to/example_L001_R1.fastq.gz	/path/to/example_L001_R2.fastq.gz	test
+example_test	L002	/path/to/example_L002_R1.fastq.gz	/path/to/example_L002_R2.fastq.gz	test
+# example_negative	L001	/path/to/negative_R1.fastq.gz	/path/to/negative_R2.fastq.gz	negative
+# example_positive	L001	/path/to/positive_R1.fastq.gz	/path/to/positive_R2.fastq.gz	positive

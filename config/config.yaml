@@ -1,0 +1,40 @@
+# One row per paired-end library. Paths may be absolute or relative to the
+# directory from which Snakemake is launched.
+samples: config/samples.tsv
+
+# Prefix used when running `bwa index -p PREFIX combined.fa`.
+# Do not append .amb/.ann/.bwt/.pac/.sa here.
+bwa_index: /path/to/hg38_NC_007605.1
+
+# Must exactly match the EBV SN field in the BWA index/BAM header.
+ebv_contig: NC_007605.1
+
+# Alignment resources. The rule requests bwa_threads + sort_threads CPUs.
+bwa_threads: 6
+sort_threads: 2
+sort_memory_per_thread: 1G
+samtools_threads: 2
+
+# Multiome QNAMEs such as instrument:run:flowcell:lane:tile:x:y:rCELLBARCODE
+# store the cell barcode in the eighth colon-delimited field. Keeping this true
+# makes samtools markdup require matching cell barcodes before marking a pair as
+# duplicate. Set false for ordinary bulk ATAC QNAMEs without that field.
+barcode_aware_duplicates: true
+
+# Conservative EBV-fragment filters.
+min_mapq: 30
+min_aligned_bases_per_mate: 30
+max_edit_distance_per_mate: 5
+
+# Optional three-column BED of EBV repeat/human-homologous intervals.
+# Coordinates must be zero-based, half-open, and use ebv_contig in column 1.
+# Leave empty to skip this exclusion.
+ebv_exclude_bed: ""
+
+# Provisional classification settings. Matched negative and positive controls
+# in samples.tsv make these classifications substantially more informative.
+positive_min_fragments: 5
+positive_min_distinct_loci: 3
+background_rpm_multiplier: 3.0
+minimum_usable_fragments: 100000
+positive_control_min_fragments: 20
