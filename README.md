@@ -32,10 +32,14 @@ sample; `unit` must be unique within a sample. If the `unit` column is omitted,
 the workflow assigns `unit1`, `unit2`, and so on in row order.
 
 Each FASTQ pair is aligned independently, allowing Snakemake to process pairs
-and samples in parallel. Name-sorted unit BAMs are then merged per sample before
-mate fixing and duplicate marking, so the final read counts, EBV evidence, and
-classification include all FASTQs for that sample. The final TSV includes an
-`input_fastq_pairs` column recording how many pairs were combined.
+and samples in parallel. BWA alignment first writes a complete unsorted BAM;
+name sorting is a separate rule, so a failed or time-limited sort can restart
+without remapping the FASTQs. Name-sorted unit BAMs are then merged per sample
+before mate fixing and duplicate marking, so the final read counts, EBV
+evidence, and classification include all FASTQs for that sample. Sort rules use
+unique temporary directories, preventing files left by an interrupted attempt
+from colliding with a retry. The final TSV includes an `input_fastq_pairs`
+column recording how many pairs were combined.
 
 For 10x single-cell Multiome ATAC data, supply the genomic `R1` and `R2`
 FASTQs. This minimal screen does not use `I1`/`I2` and therefore reports

@@ -89,34 +89,53 @@ rule all:
         expand("results/evidence/{sample}.ebv_candidates.tsv", sample=SAMPLE_NAMES),
 
 
-rule align_name_sort:
+rule align_bam:
     input:
         r1=lambda wc: UNITS[(wc.sample, wc.unit)]["r1"],
         r2=lambda wc: UNITS[(wc.sample, wc.unit)]["r2"],
         index_files=BWA_INDEX_FILES,
     output:
-        temp("results/intermediate/units/{sample}/{unit}.namesort.bam"),
+        temp("results/intermediate/units/{sample}/{unit}.unsorted.bam"),
     log:
         bwa="results/logs/units/{sample}/{unit}.bwa.log",
-        sort="results/logs/units/{sample}/{unit}.namesort.log",
+        bam="results/logs/units/{sample}/{unit}.bam_conversion.log",
     params:
         index=lambda wc, input: str(input.index_files[0])[:-4],
         bwa_threads=BWA_THREADS,
-        sort_threads=SORT_THREADS,
-        sort_memory=SORT_MEMORY,
-    threads: BWA_THREADS + SORT_THREADS
+    threads: BWA_THREADS + 1
     conda: "environment.yml"
     shell:
         r"""
         set -euo pipefail
         mkdir -p results/intermediate/units/{wildcards.sample} \
-          results/logs/units/{wildcards.sample} results/tmp
+          results/logs/units/{wildcards.sample}
         bwa mem -t {params.bwa_threads} {params.index:q} {input.r1:q} {input.r2:q} \
           2> {log.bwa:q} \
-        | samtools sort -n -@ {params.sort_threads} -m {params.sort_memory} \
-            -T results/tmp/{wildcards.sample}.{wildcards.unit}.namesort \
-            -o {output:q} - \
-            2> {log.sort:q}
+        | samtools view -@ 1 -b -o {output:q} - 2> {log.bam:q}
+        """
+
+
+rule name_sort_unit:
+    input:
+        "results/intermediate/units/{sample}/{unit}.unsorted.bam",
+    output:
+        temp("results/intermediate/units/{sample}/{unit}.namesort.bam"),
+    log:
+        "results/logs/units/{sample}/{unit}.namesort.log",
+    params:
+        sort_memory=SORT_MEMORY,
+    threads: SORT_THREADS
+    conda: "environment.yml"
+    shell:
+        r"""
+        set -euo pipefail
+        mkdir -p results/tmp
+        sort_tmpdir=$(mktemp -d \
+          results/tmp/{wildcards.sample}.{wildcards.unit}.namesort.XXXXXX)
+        trap 'rm -rf "$sort_tmpdir"' EXIT
+        samtools sort -n -@ {threads} -m {params.sort_memory} \
+          -T "$sort_tmpdir/sort" \
+          -o {output:q} {input:q} 2> {log:q}
         """
 
 
@@ -166,9 +185,13 @@ rule coordinate_sort:
     conda: "environment.yml"
     shell:
         r"""
+        set -euo pipefail
         mkdir -p results/tmp
+        sort_tmpdir=$(mktemp -d \
+          results/tmp/{wildcards.sample}.positionsort.XXXXXX)
+        trap 'rm -rf "$sort_tmpdir"' EXIT
         samtools sort -@ {threads} -m {params.sort_memory} \
-          -T results/tmp/{wildcards.sample}.positionsort \
+          -T "$sort_tmpdir/sort" \
           -o {output:q} {input:q} 2> {log:q}
         """
 
